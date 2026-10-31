@@ -20,10 +20,10 @@ let SENT=false,SIL=null,STARTED=false,LS=null,REC=null,TRK=null,ON=true,DIC='';
 function say(t){try{const u=new SpeechSynthesisUtterance(t);u.lang='fr-FR';speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 function ind(t){const i=document.getElementById('mic');if(i)i.textContent=t}
 async function lamp(on){try{await TRK.applyConstraints({advanced:[{torch:on}]})}catch(e){if(on){const b=document.getElementById('blanc');b.style.display='flex'}else document.getElementById('blanc').style.display='none'}}
-async function connect(){document.getElementById('tap').style.display='none';if(STARTED)return;STARTED=true;try{document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()}catch(e){}
+async function connect(){document.getElementById('tap').style.display='none';if(STARTED)return;STARTED=true;try{const de=document.documentElement;(de.requestFullscreen||de.webkitRequestFullscreen).call(de,{navigationUI:'hide'})}catch(e){}const HELLO=sayThen('Bonjour, je suis Meca Pocket Chat. Quel est votre problème ?');
 try{LS=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:true});const p=document.getElementById('prev');p.srcObject=LS;p.style.display='block';TRK=LS.getVideoTracks()[0];
 let dark=NUIT;if(!dark){await new Promise(r=>setTimeout(r,800));const c=document.createElement('canvas');c.width=32;c.height=32;const x=c.getContext('2d');x.drawImage(p,0,0,32,32);const d=x.getImageData(0,0,32,32).data;let s=0;for(let i=0;i<d.length;i+=4)s+=d[i]+d[i+1]+d[i+2];dark=s/(d.length/4*3)<50}
-if(dark)lamp(true);listen();say('Bonjour, je suis Meca Pocket Chat. Quel est votre problème ?');const q=document.getElementById('qq');if(q)q.style.display='block'}
+if(dark)lamp(true);await HELLO;listen()}
 catch(e){STARTED=false;document.getElementById('tap').style.display='flex'}}
 function cmd(t){t=t.toLowerCase();if(t.split(/\s+/).length>4)return 0;
 if(/éteins|eteins|éteindre/.test(t)){lamp(false);say('Lampe éteinte');return 1}
@@ -61,7 +61,7 @@ function home(){m.innerHTML=`<div id="mic" class="help" style="text-align:center
 <div id="tap" onclick="connect()" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,15,13,.85);color:var(--g);font-size:28px;font-weight:700;text-align:center;z-index:8;text-shadow:0 0 12px #39ff14">👆 Touche l'écran une fois<br>pour tout démarrer</div>`;
 if(STARTED){const p=document.getElementById('prev');if(LS){p.srcObject=LS;p.style.display='block'}const d=document.getElementById('d');if(DIC){d.style.display='block';d.value=DIC}ind(REC?'🟢 🎤 J\'écoute':'⚪ 🎤');return}
 setTimeout(async()=>{let ok=false;try{const q=await Promise.all(['camera','microphone'].map(n=>navigator.permissions.query({name:n})));ok=q.every(x=>x.state==='granted')}catch(e){}
-if(ok)connect();else document.getElementById('tap').style.display='flex'},300)}
+document.getElementById('tap').style.display='flex'},300)}
 function guides(){m.innerHTML=`<button class="big" onclick="home()">⬅ Retour</button><h2>Guides</h2><input id="q" placeholder="🔍 Chercher (roue, batterie…)" oninput="list(this.value)"><div id="l"></div>`;list('')}
 function list(q){q=q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');document.getElementById('l').innerHTML=G.map((g,i)=>[g,i]).filter(([g])=>(g.t+g.s.join(' ')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q)).map(([g,i])=>`<button class="big" onclick="guide(${i})">${g.t}</button>`).join('')||'<p>Rien trouvé.</p>'}
 function guide(i){const g=G[i];m.innerHTML=`<button class="big g" onclick="home()">⬅ Retour</button><h2>${g.t}</h2><div class="warn">${g.w}</div><ol>${g.s.map(x=>`<li>${x}</li>`).join('')}</ol><button class="big" onclick="aide()">🆘 Besoin d'aide ?</button>`;scrollTo(0,0)}
