@@ -1,0 +1,24 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Station Technique – Dépannage</title><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#f59e0b">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#fff;--fg:#111;--card:#f3f4f6;--acc:#d97706}
+body.nuit{--bg:#0b1220;--fg:#f1f5f9;--card:#1e293b;--acc:#f59e0b}
+*{box-sizing:border-box}body{margin:0;font:22px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--fg)}
+header{display:flex;align-items:center;gap:12px;padding:14px;background:#111827;color:#fff}header img{width:56px;border-radius:12px}h1{font-size:26px;margin:0}
+main{padding:14px;max-width:700px;margin:auto}
+.big{display:block;width:100%;font-size:26px;font-weight:700;padding:22px;margin:10px 0;border:0;border-radius:16px;background:var(--acc);color:#111;text-align:left}
+.g{background:var(--card);color:var(--fg)}
+input{width:100%;font-size:24px;padding:16px;border-radius:14px;border:2px solid var(--acc);background:var(--card);color:var(--fg)}
+.warn{background:#fee2e2;color:#7f1d1d;padding:14px;border-radius:12px;font-weight:700}
+ol li{margin:10px 0}h2{font-size:28px}
+#cam{position:fixed;inset:0;background:#000;display:none;z-index:9;flex-direction:column}#cam video{flex:1;width:100%;object-fit:cover}
+#cam .bar{display:flex;gap:8px;padding:10px}#cam .bar button{flex:1;margin:0}
+#blanc{position:fixed;inset:0;background:#fff;display:none;z-index:10;color:#000;font-size:24px;align-items:flex-end;justify-content:center;padding:30px}
+#photo{max-width:100%;border-radius:12px}
+</style></head><body>
+<header><img src="icon-192.png" alt=""><div><h1>Station Technique</h1><div>Dépannage auto</div></div></header>
+<main id="m"></main>
+<div id="cam"><video id="v" playsinline autoplay muted></video><div class="bar"><button class="big" id="snap">📸 Photo</button><button class="big" id="lt">🔦 Lumière</button><button class="big g" id="cc">✖ Fermer</button></div></div>
+<div id="blanc" onclick="this.style.display='none'">Touchez l'écran pour éteindre</div>
+<script src="app.js"></script></body></html>
