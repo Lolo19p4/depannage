@@ -16,15 +16,18 @@ const PROMPT="Tu es Meca Pocket Chat, l'assistant mécanicien automobile de Stat
 const GEM_LINK='';// lien du Gem à mettre ici
 function fullPrompt(){const d=(document.getElementById('d')||{}).value;return PROMPT+(d||'(pas encore décrite : demande-moi quel est mon problème)')}
 async function copy(){try{await navigator.clipboard.writeText(fullPrompt());return true}catch(e){return false}}
+const APP=!!window.Android;let TID=0;const TW={};window.__ttsDone=id=>{const f=TW[id];delete TW[id];f&&f()};
+window.__sttReady=()=>ind('🟢 🎤 J\'écoute');window.__sttErr=e=>ind('🎤 micro indisponible');
+window.__stt=(t,fin)=>{if(SENT)return;clearTimeout(SIL);if(!fin){SIL=setTimeout(auto,4000);return}t=(t||'').trim();if(!t)return;if(!cmd(t)){DIC+=(DIC?' ':'')+t;const d=document.getElementById('d');if(d){d.style.display='block';d.value=DIC}SIL=setTimeout(auto,2500)}};
 let SENT=false,SIL=null,STARTED=false,LS=null,REC=null,TRK=null,ON=true,DIC='';
-function say(t){try{const u=new SpeechSynthesisUtterance(t);u.lang='fr-FR';speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+function say(t){if(APP){Android.speak(t,'s'+(++TID));return}try{const u=new SpeechSynthesisUtterance(t);u.lang='fr-FR';speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 function ind(t){const i=document.getElementById('mic');if(i)i.textContent=t}
 async function lamp(on){try{await TRK.applyConstraints({advanced:[{torch:on}]})}catch(e){if(on){const b=document.getElementById('blanc');b.style.display='flex'}else document.getElementById('blanc').style.display='none'}}
-async function connect(){document.getElementById('tap').style.display='none';if(STARTED)return;STARTED=true;try{const de=document.documentElement;(de.requestFullscreen||de.webkitRequestFullscreen).call(de,{navigationUI:'hide'})}catch(e){}const HELLO=sayThen('Bonjour, je suis Meca Pocket Chat. Quel est votre problème ?');
-try{LS=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:true});const p=document.getElementById('prev');p.srcObject=LS;p.style.display='block';TRK=LS.getVideoTracks()[0];
+async function connect(){document.getElementById('tap').style.display='none';if(STARTED)return;STARTED=true;if(!APP)try{const de=document.documentElement;(de.requestFullscreen||de.webkitRequestFullscreen).call(de,{navigationUI:'hide'})}catch(e){}const HELLO=sayThen('Bonjour, je suis Meca Pocket Chat. Quel est votre problème ?');
+try{LS=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:!APP});const p=document.getElementById('prev');p.srcObject=LS;p.style.display='block';TRK=LS.getVideoTracks()[0];
 let dark=NUIT;if(!dark){await new Promise(r=>setTimeout(r,800));const c=document.createElement('canvas');c.width=32;c.height=32;const x=c.getContext('2d');x.drawImage(p,0,0,32,32);const d=x.getImageData(0,0,32,32).data;let s=0;for(let i=0;i<d.length;i+=4)s+=d[i]+d[i+1]+d[i+2];dark=s/(d.length/4*3)<50}
 if(dark)lamp(true);await HELLO;listen()}
-catch(e){STARTED=false;document.getElementById('tap').style.display='flex'}}
+catch(e){if(APP){await HELLO;listen();return}STARTED=false;document.getElementById('tap').style.display='flex'}}
 function cmd(t){t=t.toLowerCase();if(t.split(/\s+/).length>4)return 0;
 if(/éteins|eteins|éteindre/.test(t)){lamp(false);say('Lampe éteinte');return 1}
 if(/lumière|lumiere|allume|lampe/.test(t)){lamp(true);say('Lampe allumée');return 1}
@@ -32,7 +35,7 @@ if(/lumière|lumiere|allume|lampe/.test(t)){lamp(true);say('Lampe allumée');ret
 if(/chat ?gpt/.test(t)){say('J\'ouvre ChatGPT');setTimeout(gpt,1200);return 1}
 if(/ferme/.test(t)){bye();return 1}
 if(/aide|appelle/.test(t)){aide();say('Voici comment obtenir de l\'aide');return 1}return 0}
-function listen(){if(REC)return;const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){ind('🎤 micro indisponible');return}
+function listen(){if(APP){REC=1;Android.listen();return}if(REC)return;const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){ind('🎤 micro indisponible');return}
 REC=new R();REC.lang='fr-FR';REC.continuous=true;REC.interimResults=true;
 REC.onresult=ev=>{if(speechSynthesis.speaking)return;clearTimeout(SIL);const r=ev.results[ev.results.length-1];if(!r.isFinal){SIL=setTimeout(auto,4000);return}
 const t=r[0].transcript.trim();if(!t)return;if(!cmd(t)){DIC+=(DIC?' ':'')+t;const d=document.getElementById('d');if(d){d.style.display='block';d.value=DIC}SIL=setTimeout(auto,2500)}};
@@ -40,14 +43,14 @@ REC.onstart=()=>ind('🟢 🎤 J\'écoute');REC.onend=()=>{ind('⚪ 🎤');if(ON
 const API='https://meca-pocket-chat.loicm7059.workers.dev';let HIST=[];
 function frame(){try{const v=document.getElementById('prev');if(!v||!v.videoWidth)return null;const c=document.createElement('canvas');const k=512/Math.max(v.videoWidth,v.videoHeight);c.width=v.videoWidth*k;c.height=v.videoHeight*k;c.getContext('2d').drawImage(v,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.7).split(',')[1]}catch(e){return null}}
 function show(t){const q=document.getElementById('qq');if(q){q.style.display='block';q.textContent=t}}
-function sayThen(t){return new Promise(r=>{try{const u=new SpeechSynthesisUtterance(t);u.lang='fr-FR';u.onend=r;u.onerror=r;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){r()}})}
+function sayThen(t){return new Promise(r=>{if(APP){const id='t'+(++TID);TW[id]=r;Android.speak(t,id);return}try{const u=new SpeechSynthesisUtterance(t);u.lang='fr-FR';u.onend=r;u.onerror=r;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){r()}})}
 async function auto(){if(SENT||!DIC.trim())return;SENT=true;const text=DIC.trim();DIC='';const d=document.getElementById('d');if(d)d.value='';
 show('⏳ Je réfléchis…');ind('🟡 IA');let out;
 try{const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({history:HIST,text,imageBase64:frame()})});out=(await r.json()).text}catch(e){out='Problème de connexion. Réessayez, ou dites ChatGPT.'}
 HIST.push({role:'user',text},{role:'model',text:out});HIST=HIST.slice(-12);
 show(out.replace(/[*#]/g,''));await sayThen(out.replace(/[*#_]/g,''));SENT=false;ind('🟢 🎤 J\'écoute')}
-function stopAll(){ON=false;try{REC&&REC.stop()}catch(e){}try{lamp(false)}catch(e){}LS&&LS.getTracks().forEach(t=>t.stop());LS=null}
-function bye(){say('Au revoir, bonne route !');stopAll();m.innerHTML='<h2 style="text-align:center">👋 Au revoir, bonne route !</h2>';setTimeout(()=>{try{window.close()}catch(e){}},1500)}
+function stopAll(){ON=false;if(APP)try{Android.stopListen()}catch(e){};try{REC&&REC.stop()}catch(e){}try{lamp(false)}catch(e){}LS&&LS.getTracks().forEach(t=>t.stop());LS=null}
+function bye(){say('Au revoir, bonne route !');stopAll();m.innerHTML='<h2 style="text-align:center">👋 Au revoir, bonne route !</h2>';setTimeout(()=>{if(APP){Android.close();return}try{window.close()}catch(e){}},1500)}
 function fullPrompt(){return PROMPT+(DIC||'(pas encore décrite : demande-moi quel est mon problème)')}
 async function video(){await copy();stopAll();document.getElementById('st').style.display='block';setTimeout(()=>{location.href=GEM_LINK||'https://gemini.google.com/app'},1200)}
 async function gpt(){await copy();stopAll();location.href='https://chatgpt.com/?q='+encodeURIComponent(fullPrompt())}
@@ -60,7 +63,7 @@ function home(){m.innerHTML=`<div id="mic" class="help" style="text-align:center
 <div class="links"><button onclick="gpt()">ChatGPT</button><button onclick="aide()">🆘</button><button onclick="guides()">📘</button></div>
 <div id="tap" onclick="connect()" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,15,13,.85);color:var(--g);font-size:28px;font-weight:700;text-align:center;z-index:8;text-shadow:0 0 12px #39ff14">👆 Touche l'écran une fois<br>pour tout démarrer</div>`;
 if(STARTED){const p=document.getElementById('prev');if(LS){p.srcObject=LS;p.style.display='block'}const d=document.getElementById('d');if(DIC){d.style.display='block';d.value=DIC}ind(REC?'🟢 🎤 J\'écoute':'⚪ 🎤');return}
-setTimeout(async()=>{let ok=false;try{const q=await Promise.all(['camera','microphone'].map(n=>navigator.permissions.query({name:n})));ok=q.every(x=>x.state==='granted')}catch(e){}
+if(APP){connect();return}setTimeout(async()=>{let ok=false;try{const q=await Promise.all(['camera','microphone'].map(n=>navigator.permissions.query({name:n})));ok=q.every(x=>x.state==='granted')}catch(e){}
 document.getElementById('tap').style.display='flex'},300)}
 function guides(){m.innerHTML=`<button class="big" onclick="home()">⬅ Retour</button><h2>Guides</h2><input id="q" placeholder="🔍 Chercher (roue, batterie…)" oninput="list(this.value)"><div id="l"></div>`;list('')}
 function list(q){q=q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');document.getElementById('l').innerHTML=G.map((g,i)=>[g,i]).filter(([g])=>(g.t+g.s.join(' ')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q)).map(([g,i])=>`<button class="big" onclick="guide(${i})">${g.t}</button>`).join('')||'<p>Rien trouvé.</p>'}
