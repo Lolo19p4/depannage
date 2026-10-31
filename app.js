@@ -25,10 +25,10 @@ try{LS=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment
 let dark=NUIT;if(!dark){await new Promise(r=>setTimeout(r,800));const c=document.createElement('canvas');c.width=32;c.height=32;const x=c.getContext('2d');x.drawImage(p,0,0,32,32);const d=x.getImageData(0,0,32,32).data;let s=0;for(let i=0;i<d.length;i+=4)s+=d[i]+d[i+1]+d[i+2];dark=s/(d.length/4*3)<50}
 if(dark)lamp(true);listen();say('Bonjour, je suis Meca Pocket Chat. Quel est votre problème ?');const q=document.getElementById('qq');if(q)q.style.display='block'}
 catch(e){STARTED=false;document.getElementById('tap').style.display='flex'}}
-function cmd(t){t=t.toLowerCase();
+function cmd(t){t=t.toLowerCase();if(t.split(/\s+/).length>4)return 0;
 if(/éteins|eteins|éteindre/.test(t)){lamp(false);say('Lampe éteinte');return 1}
 if(/lumière|lumiere|allume|lampe/.test(t)){lamp(true);say('Lampe allumée');return 1}
-if(/(envoie|envoyer|demande).*(ia|i\.a|intelligence)|gemini/.test(t)){say('J\'envoie à Gemini');setTimeout(video,1200);return 1}
+
 if(/chat ?gpt/.test(t)){say('J\'ouvre ChatGPT');setTimeout(gpt,1200);return 1}
 if(/ferme/.test(t)){bye();return 1}
 if(/aide|appelle/.test(t)){aide();say('Voici comment obtenir de l\'aide');return 1}return 0}
