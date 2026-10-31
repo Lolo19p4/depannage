@@ -34,7 +34,7 @@ if(/ferme/.test(t)){bye();return 1}
 if(/aide|appelle/.test(t)){aide();say('Voici comment obtenir de l\'aide');return 1}return 0}
 function listen(){if(REC)return;const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){ind('🎤 micro indisponible');return}
 REC=new R();REC.lang='fr-FR';REC.continuous=true;REC.interimResults=true;
-REC.onresult=ev=>{clearTimeout(SIL);const r=ev.results[ev.results.length-1];if(!r.isFinal){SIL=setTimeout(auto,4000);return}
+REC.onresult=ev=>{if(speechSynthesis.speaking)return;clearTimeout(SIL);const r=ev.results[ev.results.length-1];if(!r.isFinal){SIL=setTimeout(auto,4000);return}
 const t=r[0].transcript.trim();if(!t)return;if(!cmd(t)){DIC+=(DIC?' ':'')+t;const d=document.getElementById('d');if(d){d.style.display='block';d.value=DIC}SIL=setTimeout(auto,2500)}};
 REC.onstart=()=>ind('🟢 🎤 J\'écoute');REC.onend=()=>{ind('⚪ 🎤');if(ON)setTimeout(()=>{try{REC.start()}catch(e){}},300)};try{REC.start()}catch(e){}}
 function auto(){if(SENT||!DIC.trim())return;SENT=true;say('Je transmets à l\'IA');setTimeout(gpt,1500)}
