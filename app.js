@@ -37,19 +37,27 @@ REC=new R();REC.lang='fr-FR';REC.continuous=true;REC.interimResults=true;
 REC.onresult=ev=>{if(speechSynthesis.speaking)return;clearTimeout(SIL);const r=ev.results[ev.results.length-1];if(!r.isFinal){SIL=setTimeout(auto,4000);return}
 const t=r[0].transcript.trim();if(!t)return;if(!cmd(t)){DIC+=(DIC?' ':'')+t;const d=document.getElementById('d');if(d){d.style.display='block';d.value=DIC}SIL=setTimeout(auto,2500)}};
 REC.onstart=()=>ind('🟢 🎤 J\'écoute');REC.onend=()=>{ind('⚪ 🎤');if(ON)setTimeout(()=>{try{REC.start()}catch(e){}},300)};try{REC.start()}catch(e){}}
-function auto(){if(SENT||!DIC.trim())return;SENT=true;say('Je transmets à l\'IA');setTimeout(gpt,1500)}
+const API='https://meca-pocket-chat.loicm7059.workers.dev';let HIST=[];
+function frame(){try{const v=document.getElementById('prev');if(!v||!v.videoWidth)return null;const c=document.createElement('canvas');const k=512/Math.max(v.videoWidth,v.videoHeight);c.width=v.videoWidth*k;c.height=v.videoHeight*k;c.getContext('2d').drawImage(v,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.7).split(',')[1]}catch(e){return null}}
+function show(t){const q=document.getElementById('qq');if(q){q.style.display='block';q.textContent=t}}
+function sayThen(t){return new Promise(r=>{try{const u=new SpeechSynthesisUtterance(t);u.lang='fr-FR';u.onend=r;u.onerror=r;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){r()}})}
+async function auto(){if(SENT||!DIC.trim())return;SENT=true;const text=DIC.trim();DIC='';const d=document.getElementById('d');if(d)d.value='';
+show('⏳ Je réfléchis…');ind('🟡 IA');let out;
+try{const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({history:HIST,text,imageBase64:frame()})});out=(await r.json()).text}catch(e){out='Problème de connexion. Réessayez, ou dites ChatGPT.'}
+HIST.push({role:'user',text},{role:'model',text:out});HIST=HIST.slice(-12);
+show(out.replace(/[*#]/g,''));await sayThen(out.replace(/[*#_]/g,''));SENT=false;ind('🟢 🎤 J\'écoute')}
 function stopAll(){ON=false;try{REC&&REC.stop()}catch(e){}try{lamp(false)}catch(e){}LS&&LS.getTracks().forEach(t=>t.stop());LS=null}
 function bye(){say('Au revoir, bonne route !');stopAll();m.innerHTML='<h2 style="text-align:center">👋 Au revoir, bonne route !</h2>';setTimeout(()=>{try{window.close()}catch(e){}},1500)}
 function fullPrompt(){return PROMPT+(DIC||'(pas encore décrite : demande-moi quel est mon problème)')}
 async function video(){await copy();stopAll();document.getElementById('st').style.display='block';setTimeout(()=>{location.href=GEM_LINK||'https://gemini.google.com/app'},1200)}
 async function gpt(){await copy();stopAll();location.href='https://chatgpt.com/?q='+encodeURIComponent(fullPrompt())}
-function home(){m.innerHTML=`<div id="mic" class="help" style="text-align:center">⚪ 🎤</div><h1 id="qq" style="display:none;text-align:center;font-size:40px;line-height:1.2;color:var(--g);text-shadow:0 0 14px rgba(57,255,20,.5);margin:10px 0">Quel est votre problème ?</h1>
+function home(){m.innerHTML=`<div id="mic" class="help" style="text-align:center">⚪ 🎤</div><h1 id="qq" style="display:none;text-align:center;font-size:30px;white-space:pre-line;line-height:1.2;color:var(--g);text-shadow:0 0 14px rgba(57,255,20,.5);margin:10px 0">Quel est votre problème ?</h1>
 <video id="prev" playsinline autoplay muted></video>
 <textarea id="d" rows="3" style="display:none;margin-top:10px" oninput="DIC=this.value"></textarea>
 <div id="st" class="help" style="display:none;color:var(--g)">✅ Message copié ! Gemini s'ouvre…</div>
-<p class="help" style="text-align:center">Parlez, j'envoie tout seul à l'IA. Dites aussi : « lumière » · « éteins la lampe » · « Gemini » · « aide » · « ferme l'appli »</p>
+<p class="help" style="text-align:center">Parlez, je vous réponds. Commandes : « lumière » · « éteins la lampe » · « aide » · « ferme l'appli »</p>
 
-<div class="links"><button onclick="video()">🤖 Envoyer à l'IA</button><button onclick="aide()">🆘</button><button onclick="guides()">📘</button></div>
+<div class="links"><button onclick="gpt()">ChatGPT</button><button onclick="aide()">🆘</button><button onclick="guides()">📘</button></div>
 <div id="tap" onclick="connect()" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,15,13,.85);color:var(--g);font-size:28px;font-weight:700;text-align:center;z-index:8;text-shadow:0 0 12px #39ff14">👆 Touche l'écran une fois<br>pour tout démarrer</div>`;
 if(STARTED){const p=document.getElementById('prev');if(LS){p.srcObject=LS;p.style.display='block'}const d=document.getElementById('d');if(DIC){d.style.display='block';d.value=DIC}ind(REC?'🟢 🎤 J\'écoute':'⚪ 🎤');return}
 setTimeout(async()=>{let ok=false;try{const q=await Promise.all(['camera','microphone'].map(n=>navigator.permissions.query({name:n})));ok=q.every(x=>x.state==='granted')}catch(e){}
