@@ -1,4 +1,4 @@
-const h=new Date().getHours();if(h<7||h>=20)document.body.classList.add('nuit');
+const h=new Date().getHours(),NUIT=h<7||h>=20;
 const S='⚠️ Moteur coupé, frein à main serré, gilet jaune et triangle si vous êtes sur la route. Sur autoroute : derrière la glissière et appelez l\'assistance.';
 const G=[
 {t:'🛞 Changer une roue',w:S+' Jamais sous la voiture quand elle est sur le cric.',s:['Garez-vous sur un sol plat et dur, hors de la circulation.','Sortez la roue de secours, le cric et la clé.','Desserrez les écrous d\'un demi-tour, roue encore au sol.','Placez le cric au point prévu (voir le manuel), levez la voiture.','Enlevez les écrous puis la roue.','Mettez la roue de secours, vissez les écrous à la main.','Redescendez la voiture, serrez les écrous en étoile, bien fort.','Vérifiez la pression et resserrez après 50 km. Une galette : 80 km/h max.']},
@@ -16,26 +16,34 @@ const PROMPT="Tu es Meca Pocket Chat, l'assistant mécanicien automobile de Stat
 const GEM_LINK='';// lien du Gem à mettre ici
 function fullPrompt(){const d=(document.getElementById('d')||{}).value;return PROMPT+(d||'Je vais te la montrer avec la caméra et t\'expliquer à voix haute. Commence par me demander de te montrer la panne.')}
 async function copy(){try{await navigator.clipboard.writeText(fullPrompt());return true}catch(e){return false}}
-async function video(){await copy();document.getElementById('st').style.display='block';setTimeout(()=>{location.href=GEM_LINK||'https://gemini.google.com/app'},1500)}
+let LS=null;
+async function connect(){const b=document.getElementById('cx');b.textContent='⏳ Connexion…';
+try{LS=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:true});const p=document.getElementById('prev');p.srcObject=LS;p.style.display='block';
+const t=LS.getVideoTracks()[0];let dark=NUIT;
+if(!dark){await new Promise(r=>setTimeout(r,800));const c=document.createElement('canvas');c.width=32;c.height=32;const x=c.getContext('2d');x.drawImage(p,0,0,32,32);const d=x.getImageData(0,0,32,32).data;let s=0;for(let i=0;i<d.length;i+=4)s+=d[i]+d[i+1]+d[i+2];dark=s/(d.length/4*3)<50}
+if(dark){try{await t.applyConstraints({advanced:[{torch:true}]})}catch(e){}}
+b.textContent='✅ Connecté – parlez, je note';micro()}catch(e){b.textContent='🔗 Tout connecter';alert('Autorisez la caméra et le micro dans le navigateur.')}
+document.getElementById('send').style.display='block'}
+async function video(){await copy();if(LS)LS.getTracks().forEach(t=>t.stop());document.getElementById('st').style.display='block';setTimeout(()=>{location.href=GEM_LINK||'https://gemini.google.com/app'},1200)}
 async function gpt(){await copy();location.href='https://chatgpt.com/?q='+encodeURIComponent(fullPrompt())}
-function micro(){const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){alert('Micro non disponible ici.');return}
-const r=new R();r.lang='fr-FR';r.interimResults=true;const d=document.getElementById('d');d.style.display='block';d.placeholder='🎤 Parlez…';
-r.onresult=ev=>{d.value=[...ev.results].map(x=>x[0].transcript).join(' ')};r.start()}
-function home(){m.innerHTML=`<button class="big" style="font-size:32px;padding:34px;text-align:center" onclick="video()">🎥 Montre ta panne en vidéo</button>
-<div id="st" class="warn" style="display:none;background:#dcfce7;color:#14532d">✅ Message copié ! Gemini s'ouvre…</div>
-<ol style="font-size:24px;font-weight:600"><li>Dans Gemini, appuie longtemps dans la case et <b>Colle</b> le message, puis envoie.</li><li>Appuie sur l'icône <b>Live</b> (les ondes 〰️), puis sur la <b>caméra</b> 📷.</li><li><b>Parle</b> et <b>montre</b> la panne.</li></ol>
-<button class="big g" onclick="micro()">🎤 Dire ma panne au micro</button><textarea id="d" rows="4" style="display:none;width:100%;font-size:24px;padding:14px;border-radius:14px;border:2px solid var(--acc);background:var(--card);color:var(--fg)"></textarea>
-<button class="big g" onclick="gpt()">🤖 Demander à ChatGPT</button>
-<button class="big g" onclick="torch()">🔦 Lampe torche</button>
-<button class="big" style="background:#dc2626;color:#fff" onclick="aide()">🆘 Contacter Station Technique</button>
-<h2 style="font-size:22px">Petits guides</h2><input id="q" placeholder="🔍 Chercher (roue, batterie…)" oninput="list(this.value)"><div id="l"></div>`;list('')}
-function list(q){q=q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');document.getElementById('l').innerHTML=G.map((g,i)=>[g,i]).filter(([g])=>(g.t+g.s.join(' ')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q)).map(([g,i])=>`<button class="big g" onclick="guide(${i})">${g.t}</button>`).join('')||'<p>Rien trouvé.</p>'}
+function micro(){const R=window.SpeechRecognition||window.webkitSpeechRecognition;const d=document.getElementById('d');d.style.display='block';if(!R){d.placeholder='Écrivez votre panne ici';return}
+const r=new R();r.lang='fr-FR';r.interimResults=true;r.continuous=true;d.placeholder='🎤 Décrivez votre panne à voix haute…';
+r.onresult=ev=>{d.value=[...ev.results].map(x=>x[0].transcript).join(' ')};try{r.start()}catch(e){}}
+function home(){m.innerHTML=`<button class="main" id="cx" onclick="connect()">🔗 Tout connecter</button>
+<video id="prev" playsinline autoplay muted></video>
+<textarea id="d" rows="3" style="display:none;margin-top:10px"></textarea>
+<button class="main" id="send" style="display:none" onclick="video()">🤖 Envoyer à l'IA</button>
+<div id="st" class="help" style="display:none;color:var(--g)">✅ Message copié ! Gemini s'ouvre…</div>
+<ol class="help"><li>Dans Gemini, collez le message et envoyez.</li><li>Touchez <b>Live</b> 〰️ puis la caméra 📷.</li><li>Parlez et montrez la panne.</li></ol>
+<div class="links"><button onclick="gpt()">ChatGPT</button><button onclick="torch()">🔦 Lampe</button><button onclick="aide()">🆘 Contact</button><button onclick="guides()">📘 Guides</button></div>`}
+function guides(){m.innerHTML=`<button class="big" onclick="home()">⬅ Retour</button><h2>Guides</h2><input id="q" placeholder="🔍 Chercher (roue, batterie…)" oninput="list(this.value)"><div id="l"></div>`;list('')}
+function list(q){q=q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');document.getElementById('l').innerHTML=G.map((g,i)=>[g,i]).filter(([g])=>(g.t+g.s.join(' ')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q)).map(([g,i])=>`<button class="big" onclick="guide(${i})">${g.t}</button>`).join('')||'<p>Rien trouvé.</p>'}
 function guide(i){const g=G[i];m.innerHTML=`<button class="big g" onclick="home()">⬅ Retour</button><h2>${g.t}</h2><div class="warn">${g.w}</div><ol>${g.s.map(x=>`<li>${x}</li>`).join('')}</ol><button class="big" onclick="aide()">🆘 Besoin d'aide ?</button>`;scrollTo(0,0)}
 function aide(){const sub=encodeURIComponent('Meca Pocket Chat – demande d\'aide'),body=encodeURIComponent('Bonjour Station Technique,\n\nMa voiture (marque, modèle, année) :\nLe problème :\nOù je suis :\nMon téléphone :\n\n(Je joins une photo)');
 m.innerHTML=`<button class="big g" onclick="home()">⬅ Retour</button><h2>🆘 Appelez un pro si :</h2><ul><li>Vous êtes sur l'autoroute ou en danger</li><li>Fumée, odeur de brûlé, fuite d'essence</li><li>Voyant rouge allumé</li><li>Freins ou direction qui ne répondent plus</li><li>Vous n'avez pas les outils ou vous doutez</li></ul>
-<a class="big" style="background:#dc2626;color:#fff;text-decoration:none" href="tel:112">📞 Urgence : 112</a>
+<a class="big" style="border-color:#dc2626;color:#ff8080" href="tel:112">📞 Urgence : 112</a>
 <p><b>Assistance de votre assurance :</b> le numéro est sur votre carte verte ou votre contrat. Sur autoroute, utilisez les bornes orange (tous les 2 km).</p>
-<a class="big" style="text-decoration:none" href="mailto:loicm7059@gmail.com?subject=${sub}&body=${body}">✉️ Demander l'aide de Station Technique</a>
+<a class="big" href="mailto:loicm7059@gmail.com?subject=${sub}&body=${body}">✉️ Demander l'aide de Station Technique</a>
 <p>📸 Prenez d'abord une photo du problème (bouton Caméra), puis ajoutez-la au mail avec le trombone 📎.</p><p style="font-size:16px">Meca Pocket Chat par Station Technique – Loïc Martin – RCS Brest 525 036 570</p>`;scrollTo(0,0)}
 let st,on=false;const C=document.getElementById('cam'),V=document.getElementById('v');
 async function cam(){try{st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});V.srcObject=st;C.style.display='flex'}catch(e){alert('Caméra non disponible. Autorisez la caméra dans le navigateur.')}}
@@ -43,7 +51,7 @@ function stop(){st&&st.getTracks().forEach(t=>t.stop());st=null;on=false;C.style
 document.getElementById('cc').onclick=stop;
 document.getElementById('lt').onclick=async()=>{try{on=!on;await st.getVideoTracks()[0].applyConstraints({advanced:[{torch:on}]})}catch(e){document.getElementById('blanc').style.display='flex'}};
 document.getElementById('snap').onclick=()=>{const c=document.createElement('canvas');c.width=V.videoWidth;c.height=V.videoHeight;c.getContext('2d').drawImage(V,0,0);const u=c.toDataURL('image/jpeg',.9);stop();
-m.innerHTML=`<button class="big g" onclick="home()">⬅ Retour</button><img id="photo" src="${u}"><a class="big" style="text-decoration:none" download="panne.jpg" href="${u}">💾 Enregistrer la photo</a><button class="big" onclick="aide()">🆘 Envoyer à Station Technique</button>`};
+m.innerHTML=`<button class="big g" onclick="home()">⬅ Retour</button><img id="photo" src="${u}"><a class="big" download="panne.jpg" href="${u}">💾 Enregistrer la photo</a><button class="big" onclick="aide()">🆘 Envoyer à Station Technique</button>`};
 async function torch(){try{const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const t=s.getVideoTracks()[0];
 if(!(t.getCapabilities&&t.getCapabilities().torch))throw 0;await t.applyConstraints({advanced:[{torch:true}]});
 const b=document.getElementById('blanc');b.style.background='#000';b.style.color='#fff';b.textContent='🔦 Lampe allumée – touchez pour éteindre';b.style.display='flex';
