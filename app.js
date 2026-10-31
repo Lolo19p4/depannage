@@ -12,18 +12,18 @@ const G=[
 {t:'🩹 Pneu crevé (kit anti-crevaison)',w:'⚠️ Ne marche pas si le flanc est déchiré ou le trou trop gros. 80 km/h max ensuite.',s:['Laissez l\'objet planté dans le pneu.','Vissez le flacon sur la valve, branchez le compresseur à l\'allume-cigare.','Gonflez jusqu\'à la pression indiquée (moins de 10 min).','Roulez tout de suite 5 km pour répartir le produit.','Revérifiez la pression, puis allez chez un garagiste.']},
 {t:'🔥 Surchauffe moteur',w:'⚠️ N\'ouvrez JAMAIS le bouchon du radiateur moteur chaud : brûlure grave.',s:['Mettez le chauffage à fond (ça refroidit le moteur).','Arrêtez-vous en sécurité, coupez le moteur.','Attendez au moins 30 minutes.','Moteur froid : vérifiez le liquide de refroidissement (bocal MIN/MAX).','Complétez si besoin. Si ça recommence : garage, ne roulez pas.']}];
 const m=document.getElementById('m');
-const PROMPT="Tu es Meca Pocket Chat, l'assistant mécanicien automobile de Station Technique (Brest, Loïc Martin). Slogan : « Chat à toute heure pour vous aider en cas de panne ! ». Présente-toi comme Meca Pocket Chat. Tu aides une personne qui n'est pas mécanicienne, au bord de la route ou chez elle.\nRègles :\n1. Sécurité d'abord : commence toujours par vérifier que la personne est en sécurité (moteur coupé, frein à main, gilet jaune, triangle, derrière la glissière sur autoroute). En cas de danger immédiat (fumée, feu, fuite d'essence, accident, blessé) : dis d'appeler le 112.\n2. Pose d'abord 2 ou 3 questions courtes (marque, modèle, année, voyants allumés, bruits, odeurs, ce qui s'est passé) avant de conclure. Demande une photo si ça aide.\n3. Guide pas à pas, une étape à la fois, avec des phrases très simples et courtes, en français. Attends la réponse avant l'étape suivante.\n4. Donne les causes possibles de la plus probable à la moins probable, et ce qu'on peut faire soi-même sans outil spécial.\n5. Si c'est trop dangereux ou trop complexe (freins, direction, airbag, haute tension, levage sans cric adapté, voyant rouge huile/température), dis clairement de ne pas rouler et de contacter l'assistance de son assurance (numéro sur la carte verte) ou Station Technique : loicm7059@gmail.com.\n6. N'invente jamais : si tu n'es pas sûr, dis-le.\n\nVoici ma panne :\n";
+const PROMPT="Tu es Meca Pocket Chat, l'assistant mécanicien automobile de Station Technique (Brest, Loïc Martin). Slogan : « Chat à toute heure pour vous aider en cas de panne ! ». Présente-toi comme Meca Pocket Chat. Tu aides une personne qui n'est pas mécanicienne, au bord de la route ou chez elle.\nRègles :\n1. Sécurité d'abord : commence toujours par vérifier que la personne est en sécurité (moteur coupé, frein à main, gilet jaune, triangle, derrière la glissière sur autoroute). En cas de danger immédiat (fumée, feu, fuite d'essence, accident, blessé) : dis d'appeler le 112.\n2. Réponds TOUT DE SUITE avec l'étape 1 à faire, puis pose UNE seule question à la fois. Pas de longue introduction. Questions utiles (marque, modèle, année, voyants allumés, bruits, odeurs, ce qui s'est passé) avant de conclure. Demande une photo si ça aide.\n3. Guide pas à pas, une étape à la fois. Phrases très courtes (10 mots max), mots simples, en français. Maximum 4 lignes par réponse. Attends la réponse avant l'étape suivante.\n4. Donne les causes possibles de la plus probable à la moins probable, et ce qu'on peut faire soi-même sans outil spécial.\n5. Si c'est trop dangereux ou trop complexe (freins, direction, airbag, haute tension, levage sans cric adapté, voyant rouge huile/température), dis clairement de ne pas rouler et de contacter l'assistance de son assurance (numéro sur la carte verte) ou Station Technique : loicm7059@gmail.com.\n6. N'invente jamais : si tu n'es pas sûr, dis-le.\n\nVoici ma panne :\n";
 const GEM_LINK='';// lien du Gem à mettre ici
-function fullPrompt(){const d=(document.getElementById('d')||{}).value;return PROMPT+(d||'Je vais te la montrer avec la caméra et t\'expliquer à voix haute. Commence par me demander de te montrer la panne.')}
+function fullPrompt(){const d=(document.getElementById('d')||{}).value;return PROMPT+(d||'(pas encore décrite : demande-moi quel est mon problème)')}
 async function copy(){try{await navigator.clipboard.writeText(fullPrompt());return true}catch(e){return false}}
-let STARTED=false,LS=null,REC=null,TRK=null,ON=true,DIC='';
+let SENT=false,SIL=null,STARTED=false,LS=null,REC=null,TRK=null,ON=true,DIC='';
 function say(t){try{const u=new SpeechSynthesisUtterance(t);u.lang='fr-FR';speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
 function ind(t){const i=document.getElementById('mic');if(i)i.textContent=t}
 async function lamp(on){try{await TRK.applyConstraints({advanced:[{torch:on}]})}catch(e){if(on){const b=document.getElementById('blanc');b.style.display='flex'}else document.getElementById('blanc').style.display='none'}}
-async function connect(){document.getElementById('tap').style.display='none';if(STARTED)return;STARTED=true;
+async function connect(){document.getElementById('tap').style.display='none';if(STARTED)return;STARTED=true;try{document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()}catch(e){}
 try{LS=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:true});const p=document.getElementById('prev');p.srcObject=LS;p.style.display='block';TRK=LS.getVideoTracks()[0];
 let dark=NUIT;if(!dark){await new Promise(r=>setTimeout(r,800));const c=document.createElement('canvas');c.width=32;c.height=32;const x=c.getContext('2d');x.drawImage(p,0,0,32,32);const d=x.getImageData(0,0,32,32).data;let s=0;for(let i=0;i<d.length;i+=4)s+=d[i]+d[i+1]+d[i+2];dark=s/(d.length/4*3)<50}
-if(dark)lamp(true);listen();say('Bonjour, je suis Meca Pocket Chat. Décrivez votre panne. Dites envoie à l\'IA quand vous avez fini.')}
+if(dark)lamp(true);listen();say('Bonjour, je suis Meca Pocket Chat. Quel est votre problème ?');const q=document.getElementById('qq');if(q)q.style.display='block'}
 catch(e){STARTED=false;document.getElementById('tap').style.display='flex'}}
 function cmd(t){t=t.toLowerCase();
 if(/éteins|eteins|éteindre/.test(t)){lamp(false);say('Lampe éteinte');return 1}
@@ -33,20 +33,22 @@ if(/chat ?gpt/.test(t)){say('J\'ouvre ChatGPT');setTimeout(gpt,1200);return 1}
 if(/ferme/.test(t)){bye();return 1}
 if(/aide|appelle/.test(t)){aide();say('Voici comment obtenir de l\'aide');return 1}return 0}
 function listen(){if(REC)return;const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){ind('🎤 micro indisponible');return}
-REC=new R();REC.lang='fr-FR';REC.continuous=true;REC.interimResults=false;
-REC.onresult=ev=>{const t=ev.results[ev.results.length-1][0].transcript.trim();if(!cmd(t)){DIC+=(DIC?' ':'')+t;const d=document.getElementById('d');if(d){d.style.display='block';d.value=DIC}}};
+REC=new R();REC.lang='fr-FR';REC.continuous=true;REC.interimResults=true;
+REC.onresult=ev=>{clearTimeout(SIL);const r=ev.results[ev.results.length-1];if(!r.isFinal){SIL=setTimeout(auto,4000);return}
+const t=r[0].transcript.trim();if(!t)return;if(!cmd(t)){DIC+=(DIC?' ':'')+t;const d=document.getElementById('d');if(d){d.style.display='block';d.value=DIC}SIL=setTimeout(auto,2500)}};
 REC.onstart=()=>ind('🟢 🎤 J\'écoute');REC.onend=()=>{ind('⚪ 🎤');if(ON)setTimeout(()=>{try{REC.start()}catch(e){}},300)};try{REC.start()}catch(e){}}
+function auto(){if(SENT||!DIC.trim())return;SENT=true;say('Je transmets à l\'IA');setTimeout(gpt,1500)}
 function stopAll(){ON=false;try{REC&&REC.stop()}catch(e){}try{lamp(false)}catch(e){}LS&&LS.getTracks().forEach(t=>t.stop());LS=null}
 function bye(){say('Au revoir, bonne route !');stopAll();m.innerHTML='<h2 style="text-align:center">👋 Au revoir, bonne route !</h2>';setTimeout(()=>{try{window.close()}catch(e){}},1500)}
-function fullPrompt(){return PROMPT+(DIC||'Je vais te la montrer avec la caméra et t\'expliquer à voix haute. Commence par me demander de te montrer la panne.')}
+function fullPrompt(){return PROMPT+(DIC||'(pas encore décrite : demande-moi quel est mon problème)')}
 async function video(){await copy();stopAll();document.getElementById('st').style.display='block';setTimeout(()=>{location.href=GEM_LINK||'https://gemini.google.com/app'},1200)}
 async function gpt(){await copy();stopAll();location.href='https://chatgpt.com/?q='+encodeURIComponent(fullPrompt())}
-function home(){m.innerHTML=`<div id="mic" class="help" style="text-align:center">⚪ 🎤</div>
+function home(){m.innerHTML=`<div id="mic" class="help" style="text-align:center">⚪ 🎤</div><h1 id="qq" style="display:none;text-align:center;font-size:40px;line-height:1.2;color:var(--g);text-shadow:0 0 14px rgba(57,255,20,.5);margin:10px 0">Quel est votre problème ?</h1>
 <video id="prev" playsinline autoplay muted></video>
 <textarea id="d" rows="3" style="display:none;margin-top:10px" oninput="DIC=this.value"></textarea>
 <div id="st" class="help" style="display:none;color:var(--g)">✅ Message copié ! Gemini s'ouvre…</div>
-<p class="help" style="text-align:center">Dites : « lumière » · « éteins la lampe » · « envoie à l'IA » · « ChatGPT » · « aide » · « ferme l'appli »</p>
-<ol class="help"><li>Dans Gemini, collez le message et envoyez.</li><li>Touchez <b>Live</b> 〰️ puis la caméra 📷.</li><li>Parlez et montrez la panne.</li></ol>
+<p class="help" style="text-align:center">Parlez, j'envoie tout seul à l'IA. Dites aussi : « lumière » · « éteins la lampe » · « Gemini » · « aide » · « ferme l'appli »</p>
+
 <div class="links"><button onclick="video()">🤖 Envoyer à l'IA</button><button onclick="aide()">🆘</button><button onclick="guides()">📘</button></div>
 <div id="tap" onclick="connect()" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,15,13,.85);color:var(--g);font-size:28px;font-weight:700;text-align:center;z-index:8;text-shadow:0 0 12px #39ff14">👆 Touche l'écran une fois<br>pour tout démarrer</div>`;
 if(STARTED){const p=document.getElementById('prev');if(LS){p.srcObject=LS;p.style.display='block'}const d=document.getElementById('d');if(DIC){d.style.display='block';d.value=DIC}ind(REC?'🟢 🎤 J\'écoute':'⚪ 🎤');return}
