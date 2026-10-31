@@ -16,26 +16,41 @@ const PROMPT="Tu es Meca Pocket Chat, l'assistant mécanicien automobile de Stat
 const GEM_LINK='';// lien du Gem à mettre ici
 function fullPrompt(){const d=(document.getElementById('d')||{}).value;return PROMPT+(d||'Je vais te la montrer avec la caméra et t\'expliquer à voix haute. Commence par me demander de te montrer la panne.')}
 async function copy(){try{await navigator.clipboard.writeText(fullPrompt());return true}catch(e){return false}}
-let LS=null;
-async function connect(){const b=document.getElementById('cx');b.textContent='⏳ Connexion…';
-try{LS=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:true});const p=document.getElementById('prev');p.srcObject=LS;p.style.display='block';
-const t=LS.getVideoTracks()[0];let dark=NUIT;
-if(!dark){await new Promise(r=>setTimeout(r,800));const c=document.createElement('canvas');c.width=32;c.height=32;const x=c.getContext('2d');x.drawImage(p,0,0,32,32);const d=x.getImageData(0,0,32,32).data;let s=0;for(let i=0;i<d.length;i+=4)s+=d[i]+d[i+1]+d[i+2];dark=s/(d.length/4*3)<50}
-if(dark){try{await t.applyConstraints({advanced:[{torch:true}]})}catch(e){}}
-b.textContent='✅ Connecté – parlez, je note';micro()}catch(e){b.textContent='🔗 Tout connecter';alert('Autorisez la caméra et le micro dans le navigateur.')}
-document.getElementById('send').style.display='block'}
-async function video(){await copy();if(LS)LS.getTracks().forEach(t=>t.stop());document.getElementById('st').style.display='block';setTimeout(()=>{location.href=GEM_LINK||'https://gemini.google.com/app'},1200)}
-async function gpt(){await copy();location.href='https://chatgpt.com/?q='+encodeURIComponent(fullPrompt())}
-function micro(){const R=window.SpeechRecognition||window.webkitSpeechRecognition;const d=document.getElementById('d');d.style.display='block';if(!R){d.placeholder='Écrivez votre panne ici';return}
-const r=new R();r.lang='fr-FR';r.interimResults=true;r.continuous=true;d.placeholder='🎤 Décrivez votre panne à voix haute…';
-r.onresult=ev=>{d.value=[...ev.results].map(x=>x[0].transcript).join(' ')};try{r.start()}catch(e){}}
-function home(){m.innerHTML=`<button class="main" id="cx" onclick="connect()">🔗 Tout connecter</button>
+let LS=null,REC=null,TRK=null,ON=true,DIC='';
+function say(t){try{const u=new SpeechSynthesisUtterance(t);u.lang='fr-FR';speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+function ind(t){const i=document.getElementById('mic');if(i)i.textContent=t}
+async function lamp(on){try{await TRK.applyConstraints({advanced:[{torch:on}]})}catch(e){if(on){const b=document.getElementById('blanc');b.style.display='flex'}else document.getElementById('blanc').style.display='none'}}
+async function connect(){document.getElementById('tap').style.display='none';
+try{LS=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:true});const p=document.getElementById('prev');p.srcObject=LS;p.style.display='block';TRK=LS.getVideoTracks()[0];
+let dark=NUIT;if(!dark){await new Promise(r=>setTimeout(r,800));const c=document.createElement('canvas');c.width=32;c.height=32;const x=c.getContext('2d');x.drawImage(p,0,0,32,32);const d=x.getImageData(0,0,32,32).data;let s=0;for(let i=0;i<d.length;i+=4)s+=d[i]+d[i+1]+d[i+2];dark=s/(d.length/4*3)<50}
+if(dark)lamp(true);listen();say('Bonjour, je suis Meca Pocket Chat. Décrivez votre panne. Dites envoie à l\'IA quand vous avez fini.')}
+catch(e){document.getElementById('tap').style.display='flex'}}
+function cmd(t){t=t.toLowerCase();
+if(/éteins|eteins|éteindre/.test(t)){lamp(false);say('Lampe éteinte');return 1}
+if(/lumière|lumiere|allume|lampe/.test(t)){lamp(true);say('Lampe allumée');return 1}
+if(/(envoie|envoyer|demande).*(ia|i\.a|intelligence)|gemini/.test(t)){say('J\'envoie à Gemini');setTimeout(video,1200);return 1}
+if(/chat ?gpt/.test(t)){say('J\'ouvre ChatGPT');setTimeout(gpt,1200);return 1}
+if(/ferme/.test(t)){bye();return 1}
+if(/aide|appelle/.test(t)){aide();say('Voici comment obtenir de l\'aide');return 1}return 0}
+function listen(){const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){ind('🎤 micro indisponible');return}
+REC=new R();REC.lang='fr-FR';REC.continuous=true;REC.interimResults=false;
+REC.onresult=ev=>{const t=ev.results[ev.results.length-1][0].transcript.trim();if(!cmd(t)){DIC+=(DIC?' ':'')+t;const d=document.getElementById('d');if(d){d.style.display='block';d.value=DIC}}};
+REC.onstart=()=>ind('🟢 🎤 J\'écoute');REC.onend=()=>{ind('⚪ 🎤');if(ON)setTimeout(()=>{try{REC.start()}catch(e){}},300)};try{REC.start()}catch(e){}}
+function stopAll(){ON=false;try{REC&&REC.stop()}catch(e){}try{lamp(false)}catch(e){}LS&&LS.getTracks().forEach(t=>t.stop());LS=null}
+function bye(){say('Au revoir, bonne route !');stopAll();m.innerHTML='<h2 style="text-align:center">👋 Au revoir, bonne route !</h2>';setTimeout(()=>{try{window.close()}catch(e){}},1500)}
+function fullPrompt(){return PROMPT+(DIC||'Je vais te la montrer avec la caméra et t\'expliquer à voix haute. Commence par me demander de te montrer la panne.')}
+async function video(){await copy();stopAll();document.getElementById('st').style.display='block';setTimeout(()=>{location.href=GEM_LINK||'https://gemini.google.com/app'},1200)}
+async function gpt(){await copy();stopAll();location.href='https://chatgpt.com/?q='+encodeURIComponent(fullPrompt())}
+function home(){m.innerHTML=`<div id="mic" class="help" style="text-align:center">⚪ 🎤</div>
 <video id="prev" playsinline autoplay muted></video>
-<textarea id="d" rows="3" style="display:none;margin-top:10px"></textarea>
-<button class="main" id="send" style="display:none" onclick="video()">🤖 Envoyer à l'IA</button>
+<textarea id="d" rows="3" style="display:none;margin-top:10px" oninput="DIC=this.value"></textarea>
 <div id="st" class="help" style="display:none;color:var(--g)">✅ Message copié ! Gemini s'ouvre…</div>
+<p class="help" style="text-align:center">Dites : « lumière » · « éteins la lampe » · « envoie à l'IA » · « ChatGPT » · « aide » · « ferme l'appli »</p>
 <ol class="help"><li>Dans Gemini, collez le message et envoyez.</li><li>Touchez <b>Live</b> 〰️ puis la caméra 📷.</li><li>Parlez et montrez la panne.</li></ol>
-<div class="links"><button onclick="gpt()">ChatGPT</button><button onclick="torch()">🔦 Lampe</button><button onclick="aide()">🆘 Contact</button><button onclick="guides()">📘 Guides</button></div>`}
+<div class="links"><button onclick="video()">🤖 Envoyer à l'IA</button><button onclick="aide()">🆘</button><button onclick="guides()">📘</button></div>
+<div id="tap" onclick="connect()" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,15,13,.85);color:var(--g);font-size:28px;font-weight:700;text-align:center;z-index:8;text-shadow:0 0 12px #39ff14">👆 Touche l'écran une fois<br>pour tout démarrer</div>`;
+setTimeout(async()=>{let ok=false;try{const q=await Promise.all(['camera','microphone'].map(n=>navigator.permissions.query({name:n})));ok=q.every(x=>x.state==='granted')}catch(e){}
+if(ok)connect();else document.getElementById('tap').style.display='flex'},300)}
 function guides(){m.innerHTML=`<button class="big" onclick="home()">⬅ Retour</button><h2>Guides</h2><input id="q" placeholder="🔍 Chercher (roue, batterie…)" oninput="list(this.value)"><div id="l"></div>`;list('')}
 function list(q){q=q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');document.getElementById('l').innerHTML=G.map((g,i)=>[g,i]).filter(([g])=>(g.t+g.s.join(' ')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q)).map(([g,i])=>`<button class="big" onclick="guide(${i})">${g.t}</button>`).join('')||'<p>Rien trouvé.</p>'}
 function guide(i){const g=G[i];m.innerHTML=`<button class="big g" onclick="home()">⬅ Retour</button><h2>${g.t}</h2><div class="warn">${g.w}</div><ol>${g.s.map(x=>`<li>${x}</li>`).join('')}</ol><button class="big" onclick="aide()">🆘 Besoin d'aide ?</button>`;scrollTo(0,0)}
