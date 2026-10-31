@@ -13,12 +13,19 @@ const G=[
 {t:'🔥 Surchauffe moteur',w:'⚠️ N\'ouvrez JAMAIS le bouchon du radiateur moteur chaud : brûlure grave.',s:['Mettez le chauffage à fond (ça refroidit le moteur).','Arrêtez-vous en sécurité, coupez le moteur.','Attendez au moins 30 minutes.','Moteur froid : vérifiez le liquide de refroidissement (bocal MIN/MAX).','Complétez si besoin. Si ça recommence : garage, ne roulez pas.']}];
 const m=document.getElementById('m');
 const PROMPT="Tu es un m\u00e9canicien automobile expert de Station Technique (Brest, Lo\u00efc Martin). Tu aides une personne qui n'est pas m\u00e9canicienne, au bord de la route ou chez elle.\nR\u00e8gles :\n1. S\u00e9curit\u00e9 d'abord : commence toujours par v\u00e9rifier que la personne est en s\u00e9curit\u00e9 (moteur coup\u00e9, frein \u00e0 main, gilet jaune, triangle, derri\u00e8re la glissi\u00e8re sur autoroute). En cas de danger imm\u00e9diat (fum\u00e9e, feu, fuite d'essence, accident, bless\u00e9) : dis d'appeler le 112.\n2. Pose d'abord 2 ou 3 questions courtes (marque, mod\u00e8le, ann\u00e9e, voyants allum\u00e9s, bruits, odeurs, ce qui s'est pass\u00e9) avant de conclure. Demande une photo si \u00e7a aide.\n3. Guide pas \u00e0 pas, une \u00e9tape \u00e0 la fois, avec des phrases tr\u00e8s simples et courtes, en fran\u00e7ais. Attends la r\u00e9ponse avant l'\u00e9tape suivante.\n4. Donne les causes possibles de la plus probable \u00e0 la moins probable, et ce qu'on peut faire soi-m\u00eame sans outil sp\u00e9cial.\n5. Si c'est trop dangereux ou trop complexe (freins, direction, airbag, haute tension, levage sans cric adapt\u00e9, voyant rouge huile/temp\u00e9rature), dis clairement de ne pas rouler et de contacter l'assistance de son assurance (num\u00e9ro sur la carte verte) ou Station Technique : loicm7059@gmail.com.\n6. N'invente jamais : si tu n'es pas s\u00fbr, dis-le.\n\nVoici ma panne :\n";
-function fullPrompt(){return PROMPT+(document.getElementById('d').value||'(je décris ma panne ci-dessous)')}
-function gpt(){location.href='https://chatgpt.com/?q='+encodeURIComponent(fullPrompt())}
-async function gem(){try{await navigator.clipboard.writeText(fullPrompt());alert('Texte copié ✅ Dans Gemini, appuyez longtemps dans la case puis « Coller ».')}catch(e){}open('https://gemini.google.com/app','_blank')}
-function home(){m.innerHTML=`<h2>🔧 Décris ta panne</h2><textarea id="d" rows="5" style="width:100%;font-size:24px;padding:14px;border-radius:14px;border:2px solid var(--acc);background:var(--card);color:var(--fg)" placeholder="Ex : ma Clio 2012 ne démarre plus, ça fait clic-clic"></textarea>
-<p>📸 Astuce : tu pourras ajouter une photo de la panne dans l'appli IA.</p>
-<button class="big" onclick="gpt()">🤖 Demander à l'IA (ChatGPT)</button><button class="big g" onclick="gem()">✨ Demander à Gemini</button>
+const GEM_LINK='';// lien du Gem à mettre ici
+function fullPrompt(){const d=(document.getElementById('d')||{}).value;return PROMPT+(d||'Je vais te la montrer avec la caméra et t\'expliquer à voix haute. Commence par me demander de te montrer la panne.')}
+async function copy(){try{await navigator.clipboard.writeText(fullPrompt());return true}catch(e){return false}}
+async function video(){await copy();document.getElementById('st').style.display='block';setTimeout(()=>{location.href=GEM_LINK||'https://gemini.google.com/app'},1500)}
+async function gpt(){await copy();location.href='https://chatgpt.com/?q='+encodeURIComponent(fullPrompt())}
+function micro(){const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R){alert('Micro non disponible ici.');return}
+const r=new R();r.lang='fr-FR';r.interimResults=true;const d=document.getElementById('d');d.style.display='block';d.placeholder='🎤 Parlez…';
+r.onresult=ev=>{d.value=[...ev.results].map(x=>x[0].transcript).join(' ')};r.start()}
+function home(){m.innerHTML=`<button class="big" style="font-size:32px;padding:34px;text-align:center" onclick="video()">🎥 Montre ta panne en vidéo</button>
+<div id="st" class="warn" style="display:none;background:#dcfce7;color:#14532d">✅ Message copié ! Gemini s'ouvre…</div>
+<ol style="font-size:24px;font-weight:600"><li>Dans Gemini, appuie longtemps dans la case et <b>Colle</b> le message, puis envoie.</li><li>Appuie sur l'icône <b>Live</b> (les ondes 〰️), puis sur la <b>caméra</b> 📷.</li><li><b>Parle</b> et <b>montre</b> la panne.</li></ol>
+<button class="big g" onclick="micro()">🎤 Dire ma panne au micro</button><textarea id="d" rows="4" style="display:none;width:100%;font-size:24px;padding:14px;border-radius:14px;border:2px solid var(--acc);background:var(--card);color:var(--fg)"></textarea>
+<button class="big g" onclick="gpt()">🤖 Demander à ChatGPT</button>
 <button class="big g" onclick="torch()">🔦 Lampe torche</button>
 <button class="big" style="background:#dc2626;color:#fff" onclick="aide()">🆘 Contacter Station Technique</button>
 <h2 style="font-size:22px">Petits guides</h2><input id="q" placeholder="🔍 Chercher (roue, batterie…)" oninput="list(this.value)"><div id="l"></div>`;list('')}
